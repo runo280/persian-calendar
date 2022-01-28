@@ -9,7 +9,14 @@
         android:id="@+id/app_bar"
         layout="@layout/app_bar" />
 
+    <android.opengl.GLSurfaceView
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        android:id="@+id/glSurface"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
     <LinearLayout
+        android:visibility="gone"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="horizontal"
