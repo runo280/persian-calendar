@@ -1,12 +1,17 @@
 package com.byagowi.persiancalendar.ui.converter
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import com.byagowi.persiancalendar.entities.CalendarType
 import com.byagowi.persiancalendar.entities.Jdn
 import com.byagowi.persiancalendar.global.mainCalendar
+import com.byagowi.persiancalendar.utils.calculateDaysDifference
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.merge
 
 class ConverterViewModel : ViewModel() {
@@ -30,7 +35,10 @@ class ConverterViewModel : ViewModel() {
         val todayJdn = Jdn.today()
         selectedDate != todayJdn || (isDayDistance && secondSelectedDate != todayJdn)
     }
-    val updateEvent = merge(_calendar, _selectedDate, _secondSelectedDate, _isDayDistance)
+    val updateCalendarsEvent = merge(_calendar, _selectedDate, _isDayDistance)
+        .filter { !isDayDistance }
+    val updateDifferenceEvent = merge(_calendar, _selectedDate, _secondSelectedDate, _isDayDistance)
+        .filter { isDayDistance }
 
     // Commands
     fun changeCalendar(calendarType: CalendarType) {

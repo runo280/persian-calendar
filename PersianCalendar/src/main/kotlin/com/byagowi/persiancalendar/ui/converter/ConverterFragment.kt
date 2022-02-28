@@ -25,6 +25,7 @@ import com.byagowi.persiancalendar.utils.dateStringOfOtherCalendars
 import com.byagowi.persiancalendar.utils.dayTitleSummary
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 
 class ConverterFragment : Fragment(R.layout.fragment_converter) {
@@ -95,20 +96,21 @@ class ConverterFragment : Fragment(R.layout.fragment_converter) {
         binding.secondDayPickerView.selectedDayListener = viewModel::changeSecondSelectedDate
 
         // Setup view model change listeners
-        viewModel.updateEvent
+        viewModel.updateCalendarsEvent
             .onEach {
-                if (viewModel.isDayDistance) {
-                    binding.dayDistance.text = calculateDaysDifference(
-                        resources, viewModel.selectedDate, viewModel.secondSelectedDate,
-                        viewModel.calendar
-                    )
-                } else {
-                    val selectedCalendarType = viewModel.calendar
-                    binding.calendarsView.showCalendars(
-                        viewModel.selectedDate,
-                        selectedCalendarType, enabledCalendars - selectedCalendarType
-                    )
-                }
+                val selectedCalendarType = viewModel.calendar
+                binding.calendarsView.showCalendars(
+                    viewModel.selectedDate,
+                    selectedCalendarType, enabledCalendars - selectedCalendarType
+                )
+            }
+            .launchIn(viewLifecycleOwner.lifecycleScope)
+        viewModel.updateDifferenceEvent
+            .onEach {
+                binding.dayDistance.text = calculateDaysDifference(
+                    resources, viewModel.selectedDate, viewModel.secondSelectedDate,
+                    viewModel.calendar
+                )
             }
             .launchIn(viewLifecycleOwner.lifecycleScope)
         viewModel.calendarChangeEvent
