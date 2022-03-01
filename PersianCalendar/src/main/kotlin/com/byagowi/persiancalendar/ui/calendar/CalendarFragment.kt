@@ -165,7 +165,7 @@ class CalendarFragment : Fragment(R.layout.fragment_calendar) {
             it.enableTransitionType(LayoutTransition.CHANGING)
             it.setAnimateParentHierarchy(false)
         }
-        viewModel.selectedDayChangeEvent
+        viewModel.selectedDay
             .onEach { showEvent(binding, it) }
             .launchIn(viewLifecycleOwner.lifecycleScope)
         return binding.root
@@ -192,7 +192,7 @@ class CalendarFragment : Fragment(R.layout.fragment_calendar) {
         }
         binding.timesFlow.setup()
 
-        viewModel.selectedDayChangeEvent
+        viewModel.selectedDay
             .onEach { jdn -> setOwghat(binding, jdn, jdn == Jdn.today()) }
             .launchIn(viewLifecycleOwner.lifecycleScope)
 
@@ -231,7 +231,7 @@ class CalendarFragment : Fragment(R.layout.fragment_calendar) {
 
         val tabs = listOfNotNull(
             R.string.calendar to CalendarsView(view.context).also { calendarsView ->
-                viewModel.selectedDayChangeEvent
+                viewModel.selectedDay
                     .onEach { jdn ->
                         calendarsView.showCalendars(jdn, mainCalendar, enabledCalendars)
                     }
@@ -302,8 +302,8 @@ class CalendarFragment : Fragment(R.layout.fragment_calendar) {
             }
         }
 
-        if (viewModel.selectedDay != Jdn.today()) {
-            bringDate(viewModel.selectedDay, monthChange = false, smoothScroll = false)
+        if (viewModel.selectedDay.value != Jdn.today()) {
+            bringDate(viewModel.selectedDay.value, monthChange = false, smoothScroll = false)
         } else {
             bringDate(Jdn.today(), monthChange = false, highlight = false)
         }
@@ -584,18 +584,18 @@ class CalendarFragment : Fragment(R.layout.fragment_calendar) {
             it.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
             it.onClick {
                 showDayPickerDialog(
-                    activity ?: return@onClick, viewModel.selectedDay, R.string.go
+                    activity ?: return@onClick, viewModel.selectedDay.value, R.string.go
                 ) { jdn -> bringDate(jdn) }
             }
         }
         toolbar.menu.add(R.string.add_event).also {
             it.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
-            it.onClick { addEventOnCalendar(viewModel.selectedDay) }
+            it.onClick { addEventOnCalendar(viewModel.selectedDay.value) }
         }
         toolbar.menu.add(R.string.shift_work_settings).also {
             it.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
             it.onClick {
-                showShiftWorkDialog(activity ?: return@onClick, viewModel.selectedDay) {
+                showShiftWorkDialog(activity ?: return@onClick, viewModel.selectedDay.value) {
                     findNavController().navigateSafe(CalendarFragmentDirections.navigateToSelf())
                 }
             }

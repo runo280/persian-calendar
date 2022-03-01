@@ -22,20 +22,20 @@ class CalendarViewModel @JvmOverloads constructor(
 
     // State
     private val _selectedDay = MutableStateFlow(Jdn.today())
-    private val _selectedMonth = MutableStateFlow(
-        mainCalendar.getMonthStartFromMonthsDistance(selectedDay, 0)
-    )
-    private val _selectedTabIndex = MutableStateFlow(0)
-    private val _eventsFlow = MutableStateFlow<List<CalendarEvent<*>>>(emptyList())
+    val selectedDay: StateFlow<Jdn> get() = _selectedDay
 
-    // Values
-    val selectedDay: Jdn get() = _selectedDay.value
+    private val _selectedMonth = MutableStateFlow(
+        mainCalendar.getMonthStartFromMonthsDistance(_selectedDay.value, 0)
+    )
     val selectedMonth: StateFlow<AbstractDate> get() = _selectedMonth
+
+    private val _selectedTabIndex = MutableStateFlow(0)
     val selectedTabIndex: StateFlow<Int> get() = _selectedTabIndex
+
+    private val _eventsFlow = MutableStateFlow<List<CalendarEvent<*>>>(emptyList())
     val eventsFlow: StateFlow<List<CalendarEvent<*>>> get() = _eventsFlow
 
     // Events
-    val selectedDayChangeEvent: Flow<Jdn> get() = _selectedDay
     val todayButtonVisibilityEvent = _selectedDay.combine(_selectedMonth) { day, month ->
         val todayJdn = Jdn.today()
         val todayDate = todayJdn.toCalendar(mainCalendar)

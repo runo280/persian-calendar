@@ -34,7 +34,7 @@ class ConverterFragment : Fragment(R.layout.fragment_converter) {
         val binding = FragmentConverterBinding.bind(view)
 
         val viewModel by viewModels<ConverterViewModel>()
-        binding.dayPickerView.changeCalendarType(viewModel.calendar)
+        binding.dayPickerView.changeCalendarType(viewModel.calendar.value)
 
         val spinner = Spinner(binding.appBar.toolbar.context)
         spinner.adapter = ArrayAdapter(
@@ -47,7 +47,7 @@ class ConverterFragment : Fragment(R.layout.fragment_converter) {
                 parent: AdapterView<*>?, view: View?, position: Int, id: Long
             ) = viewModel.changeScreenMode(ConverterScreenMode.fromPosition(position))
         }
-        spinner.setSelection(viewModel.screenMode.ordinal)
+        spinner.setSelection(viewModel.screenMode.value.ordinal)
 
         binding.appBar.toolbar.let { toolbar ->
             toolbar.setupMenuNavigation()
@@ -76,7 +76,7 @@ class ConverterFragment : Fragment(R.layout.fragment_converter) {
         }.onClick {
             val jdn = binding.dayPickerView.jdn
             activity?.shareText(
-                if (viewModel.screenMode == ConverterScreenMode.Converter) listOf(
+                if (viewModel.screenMode.value == ConverterScreenMode.Converter) listOf(
                     dayTitleSummary(jdn, jdn.toCalendar(mainCalendar)),
                     getString(R.string.equivalent_to),
                     dateStringOfOtherCalendars(jdn, spacedComma)
@@ -84,13 +84,13 @@ class ConverterFragment : Fragment(R.layout.fragment_converter) {
             )
         }
 
-        binding.secondDayPickerView.jdn = viewModel.secondSelectedDate
+        binding.secondDayPickerView.jdn = viewModel.secondSelectedDate.value
         binding.secondDayPickerView.turnToSecondaryDatePicker()
         binding.dayPickerView.selectedDayListener = viewModel::changeSelectedDate
         binding.dayPickerView.selectedCalendarListener = viewModel::changeCalendar
-        binding.dayPickerView.jdn = viewModel.selectedDate
+        binding.dayPickerView.jdn = viewModel.selectedDate.value
         binding.secondDayPickerView.selectedDayListener = viewModel::changeSecondSelectedDate
-        binding.inputText.setText(viewModel.inputText)
+        binding.inputText.setText(viewModel.inputText.value)
         binding.inputText.doOnTextChanged { text, _, _, _ ->
             viewModel.changeCalculatorInput(text?.toString() ?: "")
         }
@@ -98,18 +98,18 @@ class ConverterFragment : Fragment(R.layout.fragment_converter) {
         // Setup view model change listeners
         viewModel.updateEvent
             .onEach {
-                when (viewModel.screenMode) {
+                when (viewModel.screenMode.value) {
                     ConverterScreenMode.Converter -> {
-                        val selectedCalendarType = viewModel.calendar
+                        val selectedCalendarType = viewModel.calendar.value
                         binding.calendarsView.showCalendars(
-                            viewModel.selectedDate,
+                            viewModel.selectedDate.value,
                             selectedCalendarType, enabledCalendars - selectedCalendarType
                         )
                     }
                     ConverterScreenMode.Distance -> {
                         binding.resultText.text = calculateDaysDifference(
-                            resources, viewModel.selectedDate, viewModel.secondSelectedDate,
-                            viewModel.calendar
+                            resources, viewModel.selectedDate.value,
+                            viewModel.secondSelectedDate.value, viewModel.calendar.value
                         )
                     }
                     ConverterScreenMode.Calculator -> {
@@ -120,9 +120,9 @@ class ConverterFragment : Fragment(R.layout.fragment_converter) {
                 }
             }
             .launchIn(viewLifecycleOwner.lifecycleScope)
-        viewModel.calendarChangeEvent
+        viewModel.calendar
             .onEach {
-                if (viewModel.screenMode == ConverterScreenMode.Distance)
+                if (viewModel.screenMode.value == ConverterScreenMode.Distance)
                     binding.secondDayPickerView.changeCalendarType(it)
             }
             .launchIn(viewLifecycleOwner.lifecycleScope)
@@ -130,9 +130,9 @@ class ConverterFragment : Fragment(R.layout.fragment_converter) {
             .distinctUntilChanged()
             .onEach(todayButton::setVisible)
             .launchIn(viewLifecycleOwner.lifecycleScope)
-        viewModel.screenModeChangeEvent
+        viewModel.screenMode
             .onEach {
-                when (viewModel.screenMode) {
+                when (viewModel.screenMode.value) {
                     ConverterScreenMode.Converter -> {
                         binding.inputTextWrapper.isVisible = false
                         binding.secondDayPickerView.isVisible = false
@@ -142,7 +142,7 @@ class ConverterFragment : Fragment(R.layout.fragment_converter) {
                         binding.resultCard.isVisible = true
                     }
                     ConverterScreenMode.Distance -> {
-                        binding.secondDayPickerView.changeCalendarType(viewModel.calendar)
+                        binding.secondDayPickerView.changeCalendarType(viewModel.calendar.value)
 
                         binding.inputTextWrapper.isVisible = false
                         binding.dayPickerView.isVisible = true
