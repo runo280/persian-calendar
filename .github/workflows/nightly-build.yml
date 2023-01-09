@@ -44,7 +44,7 @@ jobs:
 
       - name: Build and send apks to telegram
         run: |
-          for TASK in assembleMinApi17Nightly assembleMinApi21Nightly; do
+          for TASK in build; do
             ./gradlew $TASK
             apk_path="$(find . -type f -iname *.apk)"
             curl https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendDocument \
