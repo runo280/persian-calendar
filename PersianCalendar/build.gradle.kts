@@ -36,10 +36,10 @@ android {
 
     defaultConfig {
         applicationId = "com.byagowi.persiancalendar"
-        minSdk = 17
+        minSdk = 21
         targetSdk = 33
-        versionCode = 780
-        versionName = "7.8.0"
+        versionCode = 12
+        versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         if (!isMinApi21Build) vectorDrawables.useSupportLibrary = true
         resourceConfigurations += listOf(
@@ -99,9 +99,9 @@ android {
     flavorDimensions += listOf("api")
 
     productFlavors {
-        create("minApi17") {
+/*        create("minApi17") {
             dimension = "api"
-        }
+        }*/
         create("minApi21") {
             applicationIdSuffix = ".minApi21"
             dimension = "api"
@@ -127,11 +127,11 @@ android {
         kotlinCompilerExtensionVersion = composeCompilerVersion
     }
 
-    if (isMinApi21Build) {
-        buildFeatures {
-            compose = true
-        }
+
+    buildFeatures {
+        compose = true
     }
+
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -197,19 +197,18 @@ dependencies {
     // Only needed for debug builds for now, won't be needed for minApi21 builds either
     debugImplementation("androidx.multidex:multidex:2.0.1")
 
-    minApi21Implementation("androidx.activity:activity-compose:1.6.1")
-    minApi21Implementation("com.google.android.material:compose-theme-adapter-3:1.1.1")
+    implementation("androidx.activity:activity-compose:1.6.1")
+    implementation("com.google.android.material:compose-theme-adapter-3:1.1.1")
     val accompanistVersion = "0.28.0"
-    minApi21Implementation("com.google.accompanist:accompanist-flowlayout:$accompanistVersion")
-    minApi21Implementation("com.google.accompanist:accompanist-drawablepainter:$accompanistVersion")
-    minApi21Implementation("androidx.compose.ui:ui:$composeVersion")
-    minApi21Implementation("androidx.compose.material3:material3:1.1.0-alpha03")
-    minApi21Implementation("androidx.compose.ui:ui-tooling-preview:$composeVersion")
-    if (isMinApi21Build) {
-        implementation("androidx.compose.runtime:runtime:$composeVersion")
-        androidTestImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
-        debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
-    }
+    implementation("com.google.accompanist:accompanist-flowlayout:$accompanistVersion")
+    implementation("com.google.accompanist:accompanist-drawablepainter:$accompanistVersion")
+    implementation("androidx.compose.ui:ui:$composeVersion")
+    implementation("androidx.compose.material3:material3:1.1.0-alpha03")
+    implementation("androidx.compose.ui:ui-tooling-preview:$composeVersion")
+
+    implementation("androidx.compose.runtime:runtime:$composeVersion")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
+    debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
 
     // debugImplementation("com.squareup.leakcanary:leakcanary-android:2.8.1")
 
@@ -276,14 +275,16 @@ tasks.register("moveToApiFlavors") {
             ?: error("Moves a source file to api flavors\nPass -P fileName=FILENAME to this")
         if ("/main/" !in source) error("File name should be a source file in the main flavor")
         if (!File(source).isFile) error("Source file name doesn't exist")
-        val minApi17Target = source.replace("/main/", "/minApi17/")
-        File(File(minApi17Target).parent).mkdirs()
+//        val minApi17Target = source.replace("/main/", "/minApi17/")
+//        File(File(minApi17Target).parent).mkdirs()
         val minApi21Target = source.replace("/main/", "/minApi21/")
         File(File(minApi21Target).parent).mkdirs()
         listOf(
             "cp $source $minApi21Target",
             "git add $minApi21Target",
+/*
             "git mv $source $minApi17Target",
+*/
             "git status",
         ).forEach { println(it.execute().text) }
     }
