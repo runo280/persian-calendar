@@ -102,11 +102,11 @@ class EventsRepository(
 
     fun getEvents(jdn: Jdn, deviceEvents: DeviceCalendarEventsStore): List<CalendarEvent<*>> {
         return listOf(
-            persianCalendarEvents.getEvents(jdn.toPersianCalendar(), irregularCalendarEventsStore),
-            islamicCalendarEvents.getEvents(jdn.toIslamicCalendar(), irregularCalendarEventsStore),
-            nepaliCalendarEvents.getEvents(jdn.toNepaliCalendar(), irregularCalendarEventsStore),
+            persianCalendarEvents.getEvents(jdn.toPersianDate(), irregularCalendarEventsStore),
+            islamicCalendarEvents.getEvents(jdn.toIslamicDate(), irregularCalendarEventsStore),
+            nepaliCalendarEvents.getEvents(jdn.toNepaliDate(), irregularCalendarEventsStore),
             gregorianCalendarEvents
-                .getEvents(jdn.toGregorianCalendar(), irregularCalendarEventsStore, deviceEvents)
+                .getEvents(jdn.toCivilDate(), irregularCalendarEventsStore, deviceEvents)
         ).flatten()
     }
 
@@ -115,10 +115,10 @@ class EventsRepository(
             persianCalendarEvents.getAllEvents(), islamicCalendarEvents.getAllEvents(),
             nepaliCalendarEvents.getAllEvents(), gregorianCalendarEvents.getAllEvents()
         ).flatten() + listOf(
-            jdn.toPersianCalendar(),
-            jdn.toGregorianCalendar(),
-            jdn.toIslamicCalendar(),
-            jdn.toNepaliCalendar()
+            jdn.toPersianDate(),
+            jdn.toCivilDate(),
+            jdn.toIslamicDate(),
+            jdn.toNepaliDate()
         ).flatMap {
             val store = irregularCalendarEventsStore
             val thisYear = store.getEventsList<CalendarEvent<*>>(it.year, it.calendarType)

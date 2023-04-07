@@ -29,7 +29,7 @@ fun scheduleAlarmManagerUpdates(context: Context) = runCatching {
     if (enableWorkManager) return@runCatching
     val alarmManager = context.getSystemService<AlarmManager>() ?: return@runCatching
 
-    val startTime = Calendar.getInstance().apply {
+    val startTime = GregorianCalendar().apply {
         set(Calendar.HOUR_OF_DAY, 0)
         set(Calendar.MINUTE, 0)
         set(Calendar.SECOND, 1)
@@ -67,7 +67,7 @@ fun startEitherServiceOrWorker(context: Context) {
     if (enableWorkManager) {
         runCatching {
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                UPDATE_TAG, ExistingPeriodicWorkPolicy.REPLACE,
+                UPDATE_TAG, ExistingPeriodicWorkPolicy.UPDATE,
                 // An hourly task to call UpdateWorker.doWork
                 PeriodicWorkRequest.Builder(UpdateWorker::class.java, 1L, TimeUnit.HOURS).build()
             )

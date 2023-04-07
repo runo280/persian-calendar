@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/colorCard">
+    android:background="?attr/appBarColor">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -13,7 +13,7 @@
         <com.google.android.material.appbar.AppBarLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="?attr/navigationBarColor">
+            android:background="?attr/appBarColor">
 
             <com.google.android.material.search.SearchBar
                 android:id="@+id/toolbar"
@@ -24,11 +24,26 @@
 
         </com.google.android.material.appbar.AppBarLayout>
 
-        <com.byagowi.persiancalendar.ui.common.ZoomableView
-            android:id="@+id/map"
+        <com.google.android.material.carousel.MaskableFrameLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:contentDescription="@string/map" />
+            app:layout_behavior="@string/appbar_scrolling_view_behavior"
+            app:shapeAppearance="@style/shapeAppearanceTopCornerExtraLarge">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="?attr/colorCard">
+
+                <com.byagowi.persiancalendar.ui.common.ZoomableView
+                    android:id="@+id/map"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@string/map" />
+
+            </FrameLayout>
+
+        </com.google.android.material.carousel.MaskableFrameLayout>
 
     </LinearLayout>
 
@@ -48,12 +63,20 @@
             android:layout_gravity="start|center_vertical"
             app:tint="?attr/colorAccent" />
 
-        <TextView
-            android:id="@+id/date"
+        <FrameLayout
+            android:id="@+id/date_parent"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_gravity="center"
-            android:textAlignment="center" />
+            android:layout_gravity="center">
+
+            <TextView
+                android:id="@+id/date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:textAlignment="center" />
+
+        </FrameLayout>
 
         <com.byagowi.persiancalendar.ui.common.ArrowView
             android:id="@+id/end_arrow"

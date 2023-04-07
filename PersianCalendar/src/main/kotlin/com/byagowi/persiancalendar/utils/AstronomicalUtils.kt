@@ -27,14 +27,17 @@ import kotlin.math.atan2
 
 // Based on Mehdi's work
 
-fun isMoonInScorpio(persianDate: PersianDate, islamicDate: IslamicDate) =
-    (((islamicDate.dayOfMonth + 1) * 12.2f + (persianDate.dayOfMonth + 1)) / 30f +
+fun isMoonInScorpio(jdn: Jdn): Boolean = isMoonInScorpio(jdn.toPersianDate(), jdn.toIslamicDate())
+
+fun isMoonInScorpio(persianDate: PersianDate, islamicDate: IslamicDate): Boolean {
+    return (((islamicDate.dayOfMonth + 1) * 12.2f + (persianDate.dayOfMonth + 1)) / 30f +
             persianDate.month).toInt() % 12 == 8
+}
 
 fun getZodiacInfo(context: Context, jdn: Jdn, withEmoji: Boolean, short: Boolean): String {
     if (!isAstronomicalExtraFeaturesEnabled) return ""
-    val persianDate = jdn.toPersianCalendar()
-    val islamicDate = jdn.toIslamicCalendar()
+    val persianDate = jdn.toPersianDate()
+    val islamicDate = jdn.toIslamicDate()
     val moonInScorpioText = if (isMoonInScorpio(persianDate, islamicDate))
         context.getString(R.string.moonInScorpio) else ""
 
@@ -59,7 +62,7 @@ fun generateYearName(
             context.getString(R.string.shamsi_calendar_short)
         ),
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            val date = ChineseCalendar((time ?: Jdn(persianDate).toJavaCalendar()).time)
+            val date = ChineseCalendar((time ?: Jdn(persianDate).toGregorianCalendar()).time)
             val year = date[ChineseCalendar.YEAR]
             language.inParentheses.format(
                 ChineseZodiac.fromChineseCalendar(date).format(context, withEmoji),

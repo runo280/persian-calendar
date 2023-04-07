@@ -4,12 +4,10 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.os.Build
-import android.os.PowerManager
 import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.annotation.StringRes
 import androidx.annotation.StyleRes
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.getSystemService
 import com.byagowi.persiancalendar.PREF_THEME
 import com.byagowi.persiancalendar.R
 import com.byagowi.persiancalendar.utils.appPrefs
@@ -55,10 +53,7 @@ enum class Theme(val key: String, @StringRes val title: Int, @StyleRes private v
 
         private fun getCurrent(context: Context): Theme {
             val key = context.appPrefs.theme
-            val userTheme = values().find { it.key == key } ?: SYSTEM_DEFAULT
-            if (userTheme != SYSTEM_DEFAULT) return userTheme
-            if (isPowerSaveMode(context)) return BLACK
-            return SYSTEM_DEFAULT
+            return enumValues<Theme>().find { it.key == key } ?: SYSTEM_DEFAULT
         }
 
         @StyleRes
@@ -81,10 +76,5 @@ enum class Theme(val key: String, @StringRes val title: Int, @StyleRes private v
 
         fun isNightMode(context: Context): Boolean =
             context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
-
-        private fun isPowerSaveMode(context: Context): Boolean {
-            return Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP &&
-                    context.getSystemService<PowerManager>()?.isPowerSaveMode == true
-        }
     }
 }

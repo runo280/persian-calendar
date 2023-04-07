@@ -9,7 +9,6 @@ import android.util.TypedValue
 import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
-import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.net.toUri
@@ -22,7 +21,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.byagowi.persiancalendar.BuildConfig
 import com.byagowi.persiancalendar.R
-import com.byagowi.persiancalendar.databinding.FragmentAboutBinding
+import com.byagowi.persiancalendar.databinding.AboutScreenBinding
 import com.byagowi.persiancalendar.generated.faq
 import com.byagowi.persiancalendar.global.language
 import com.byagowi.persiancalendar.ui.utils.bringMarketPage
@@ -38,11 +37,11 @@ import com.byagowi.persiancalendar.utils.logException
 import com.byagowi.persiancalendar.utils.supportedYearOfIranCalendar
 import com.google.android.material.chip.Chip
 
-class AboutScreen : Fragment(R.layout.fragment_about) {
+class AboutScreen : Fragment(R.layout.about_screen) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val binding = FragmentAboutBinding.bind(view)
+        val binding = AboutScreenBinding.bind(view)
         binding.appBar.toolbar.let { toolbar ->
             toolbar.setTitle(R.string.about)
             toolbar.setupMenuNavigation()
@@ -90,17 +89,11 @@ class AboutScreen : Fragment(R.layout.fragment_about) {
                 context?.getAnimatedDrawable(R.drawable.splash_icon_animation) ?: return@also
             it.setImageDrawable(animation)
             animation.start()
-            var clickCount = 0
+            val clickHandler = createEasterEggClickHandler(::showPeriodicTableDialog)
             it.setOnClickListener {
                 animation.stop()
                 animation.start()
-                runCatching {
-                    val activity = activity ?: return@setOnClickListener
-                    when (++clickCount % 10) {
-                        0 -> activity.let(::showShaderSandboxDialog)
-                        9 -> Toast.makeText(activity, "One more to go!", Toast.LENGTH_SHORT).show()
-                    }
-                }.onFailure(logException)
+                clickHandler(activity)
             }
         }
 
@@ -142,7 +135,7 @@ class AboutScreen : Fragment(R.layout.fragment_about) {
         setupContributorsList(binding)
     }
 
-    private fun setupContributorsList(binding: FragmentAboutBinding) {
+    private fun setupContributorsList(binding: AboutScreenBinding) {
         val context = binding.root.context
 
         val chipsIconTintId = TypedValue().apply {

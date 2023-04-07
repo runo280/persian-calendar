@@ -1,16 +1,10 @@
 package com.byagowi.persiancalendar.ui.converter
 
-import android.content.res.ColorStateList
-import android.os.Build
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
-import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.FrameLayout
-import androidx.appcompat.widget.AppCompatSpinner
-import androidx.core.graphics.ColorUtils
 import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
 import androidx.fragment.app.Fragment
@@ -19,59 +13,39 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.byagowi.persiancalendar.R
-import com.byagowi.persiancalendar.databinding.FragmentConverterBinding
+import com.byagowi.persiancalendar.databinding.ConverterScreenBinding
+import com.byagowi.persiancalendar.databinding.ConverterSpinnerBinding
 import com.byagowi.persiancalendar.entities.Jdn
 import com.byagowi.persiancalendar.global.enabledCalendars
 import com.byagowi.persiancalendar.global.mainCalendar
 import com.byagowi.persiancalendar.global.spacedComma
-import com.byagowi.persiancalendar.ui.utils.dp
 import com.byagowi.persiancalendar.ui.utils.getCompatDrawable
+import com.byagowi.persiancalendar.ui.utils.layoutInflater
 import com.byagowi.persiancalendar.ui.utils.onClick
-import com.byagowi.persiancalendar.ui.utils.resolveColor
 import com.byagowi.persiancalendar.ui.utils.setupLayoutTransition
 import com.byagowi.persiancalendar.ui.utils.setupMenuNavigation
 import com.byagowi.persiancalendar.ui.utils.shareText
 import com.byagowi.persiancalendar.utils.calculateDaysDifference
 import com.byagowi.persiancalendar.utils.dateStringOfOtherCalendars
 import com.byagowi.persiancalendar.utils.dayTitleSummary
-import com.google.android.material.shape.MaterialShapeDrawable
-import com.google.android.material.shape.ShapeAppearanceModel
 import io.github.persiancalendar.calculator.eval
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
-class ConverterScreen : Fragment(R.layout.fragment_converter) {
+class ConverterScreen : Fragment(R.layout.converter_screen) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val binding = FragmentConverterBinding.bind(view)
+        val binding = ConverterScreenBinding.bind(view)
 
         val viewModel by viewModels<ConverterViewModel>()
         binding.dayPickerView.changeCalendarType(viewModel.calendar.value)
 
         val spinner = run {
-            val spinnerFrameLayout = FrameLayout(view.context)
-            spinnerFrameLayout.layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, 36.dp.toInt()
-            )
-            spinnerFrameLayout.background = MaterialShapeDrawable().also {
-                it.shapeAppearanceModel = ShapeAppearanceModel().withCornerSize(32.dp)
-                it.fillColor = ColorStateList.valueOf(
-                    ColorUtils.setAlphaComponent(
-                        view.context.resolveColor(R.attr.menuIconColor), 16
-                    )
-                )
-                it.setPadding(16, 0, 16, 0)
-            }
-            val spinner = AppCompatSpinner(binding.appBar.toolbar.context)
-            spinnerFrameLayout.addView(spinner)
-            binding.appBar.toolbar.addView(spinnerFrameLayout)
-            spinner
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            spinner.background =
-                view.context.getCompatDrawable(R.drawable.conveter_spinner_background)
-            spinner.setPaddingRelative(0, 0, 24.dp.toInt(), 0)
+            val toolbarContext = binding.appBar.toolbar.context
+            val spinnerBinding = ConverterSpinnerBinding.inflate(toolbarContext.layoutInflater)
+            binding.appBar.toolbar.addView(spinnerBinding.root)
+            spinnerBinding.spinner
         }
         spinner.adapter = ArrayAdapter(
             spinner.context, R.layout.toolbar_dropdown_item,
@@ -106,7 +80,7 @@ class ConverterScreen : Fragment(R.layout.fragment_converter) {
 
         binding.appBar.toolbar.menu.add(R.string.share).also { menu ->
             menu.icon =
-                binding.appBar.toolbar.context.getCompatDrawable(R.drawable.ic_content_copy)
+                binding.appBar.toolbar.context.getCompatDrawable(R.drawable.ic_baseline_share)
             menu.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
         }.onClick {
             val jdn = binding.dayPickerView.jdn

@@ -28,19 +28,17 @@ import androidx.work.WorkManager
 import com.byagowi.persiancalendar.BuildConfig
 import com.byagowi.persiancalendar.LOG_TAG
 import com.byagowi.persiancalendar.PREF_HAS_EVER_VISITED
-import com.byagowi.persiancalendar.PREF_NEW_INTERFACE
 import com.byagowi.persiancalendar.R
-import com.byagowi.persiancalendar.databinding.FragmentSettingsBinding
 import com.byagowi.persiancalendar.databinding.NumericBinding
-import com.byagowi.persiancalendar.global.enableNewInterface
+import com.byagowi.persiancalendar.databinding.SettingsScreenBinding
 import com.byagowi.persiancalendar.service.AlarmWorker
 import com.byagowi.persiancalendar.service.PersianCalendarTileService
+import com.byagowi.persiancalendar.ui.about.showCarouselDialog
 import com.byagowi.persiancalendar.ui.about.showIconsDemoDialog
 import com.byagowi.persiancalendar.ui.about.showTypographyDemoDialog
 import com.byagowi.persiancalendar.ui.settings.interfacecalendar.InterfaceCalendarFragment
 import com.byagowi.persiancalendar.ui.settings.locationathan.LocationAthanFragment
 import com.byagowi.persiancalendar.ui.settings.widgetnotification.WidgetNotificationFragment
-import com.byagowi.persiancalendar.ui.utils.canEnableNewInterface
 import com.byagowi.persiancalendar.ui.utils.getCompatDrawable
 import com.byagowi.persiancalendar.ui.utils.hideToolbarBottomShadow
 import com.byagowi.persiancalendar.ui.utils.onClick
@@ -60,11 +58,11 @@ import java.util.concurrent.TimeUnit
  * MEHDIMYADI
  */
 
-class SettingsScreen : Fragment(R.layout.fragment_settings) {
+class SettingsScreen : Fragment(R.layout.settings_screen) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val binding = FragmentSettingsBinding.bind(view)
+        val binding = SettingsScreenBinding.bind(view)
         binding.appBar.root.hideToolbarBottomShadow()
         binding.appBar.toolbar.let { toolbar ->
             toolbar.setTitle(R.string.settings)
@@ -81,8 +79,8 @@ class SettingsScreen : Fragment(R.layout.fragment_settings) {
         binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabUnselected(tab: TabLayout.Tab?) = Unit
             override fun onTabReselected(tab: TabLayout.Tab?) = Unit
-            override fun onTabSelected(tab: TabLayout.Tab?) {
-                tab?.position?.also(viewModel::changeSelectedTab)
+            override fun onTabSelected(tab: TabLayout.Tab) {
+                viewModel.changeSelectedTab(tab.position)
             }
         })
         binding.viewPager.adapter = object : FragmentStateAdapter(this) {
@@ -117,7 +115,7 @@ class SettingsScreen : Fragment(R.layout.fragment_settings) {
 
     // Development only functionalities
     private fun setupMenu(
-        toolbar: Toolbar, binding: FragmentSettingsBinding, inflater: LayoutInflater
+        toolbar: Toolbar, binding: SettingsScreenBinding, inflater: LayoutInflater
     ) {
         toolbar.menu.add(R.string.live_wallpaper_settings).onClick {
             runCatching {
@@ -152,16 +150,6 @@ class SettingsScreen : Fragment(R.layout.fragment_settings) {
         // Rest are development features
         if (!BuildConfig.DEVELOPMENT) return
         val activity = activity ?: return
-        if (canEnableNewInterface) {
-            toolbar.menu.add(R.string.enable_new_interface).also {
-                it.isCheckable = true
-                it.isChecked = enableNewInterface
-            }.onClick {
-                binding.root.context.appPrefs.edit {
-                    putBoolean(PREF_NEW_INTERFACE, !enableNewInterface)
-                }
-            }
-        }
         toolbar.menu.add("Static vs generated icons").onClick { showIconsDemoDialog(activity) }
         toolbar.menu.add("Typography").onClick { showTypographyDemoDialog(activity) }
         toolbar.menu.add("Clear preferences store and exit").onClick {
@@ -238,6 +226,9 @@ class SettingsScreen : Fragment(R.layout.fragment_settings) {
                         )
                 )
             }.onFailure(logException).getOrNull().debugAssertNotNull
+        }
+        toolbar.menu.add("Start Carousel").onClick {
+            showCarouselDialog(activity)
         }
     }
 }

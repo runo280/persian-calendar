@@ -1,7 +1,6 @@
 package com.byagowi.persiancalendar.ui
 
 import android.Manifest
-import android.app.ActivityManager
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
@@ -23,7 +22,6 @@ import androidx.appcompat.widget.Toolbar
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
-import androidx.core.content.getSystemService
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.Lifecycle
@@ -33,6 +31,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.navOptions
+import androidx.viewpager2.widget.MarginPageTransformer
 import com.byagowi.persiancalendar.CALENDAR_READ_PERMISSION_REQUEST_CODE
 import com.byagowi.persiancalendar.CHANGE_LANGUAGE_IS_PROMOTED_ONCE
 import com.byagowi.persiancalendar.DEFAULT_NOTIFY_DATE
@@ -49,16 +48,13 @@ import com.byagowi.persiancalendar.PREF_NOTIFY_DATE
 import com.byagowi.persiancalendar.PREF_SHOW_DEVICE_CALENDAR_EVENTS
 import com.byagowi.persiancalendar.PREF_THEME
 import com.byagowi.persiancalendar.R
-import com.byagowi.persiancalendar.databinding.ActivityMainBinding
+import com.byagowi.persiancalendar.databinding.MainActivityBinding
 import com.byagowi.persiancalendar.databinding.NavigationHeaderBinding
 import com.byagowi.persiancalendar.entities.CalendarType
 import com.byagowi.persiancalendar.entities.Jdn
 import com.byagowi.persiancalendar.entities.Language
-import com.byagowi.persiancalendar.entities.Season
 import com.byagowi.persiancalendar.entities.Theme
 import com.byagowi.persiancalendar.global.configureCalendarsAndLoadEvents
-import com.byagowi.persiancalendar.global.coordinates
-import com.byagowi.persiancalendar.global.enableNewInterface
 import com.byagowi.persiancalendar.global.initGlobal
 import com.byagowi.persiancalendar.global.isIranHolidaysEnabled
 import com.byagowi.persiancalendar.global.isShowDeviceCalendarEvents
@@ -72,7 +68,6 @@ import com.byagowi.persiancalendar.ui.settings.SettingsScreen
 import com.byagowi.persiancalendar.ui.utils.askForCalendarPermission
 import com.byagowi.persiancalendar.ui.utils.bringMarketPage
 import com.byagowi.persiancalendar.ui.utils.dp
-import com.byagowi.persiancalendar.ui.utils.makeWallpaperTransparency
 import com.byagowi.persiancalendar.ui.utils.navigateSafe
 import com.byagowi.persiancalendar.utils.appPrefs
 import com.byagowi.persiancalendar.utils.applyAppLanguage
@@ -84,8 +79,6 @@ import com.byagowi.persiancalendar.utils.supportedYearOfIranCalendar
 import com.byagowi.persiancalendar.utils.update
 import com.byagowi.persiancalendar.variants.debugAssertNotNull
 import com.google.android.material.navigation.NavigationView
-import com.google.android.material.shape.MaterialShapeDrawable
-import com.google.android.material.shape.ShapeAppearanceModel
 import com.google.android.material.snackbar.Snackbar
 import kotlin.math.roundToInt
 
@@ -99,7 +92,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
     private var creationDateJdn = Jdn.today()
     private var settingHasChanged = false
-    private lateinit var binding: ActivityMainBinding
+    private lateinit var binding: MainActivityBinding
 
     private val onBackPressedCloseDrawerCallback = object : OnBackPressedCallback(false) {
         override fun handleOnBackPressed() = binding.root.closeDrawer(GravityCompat.START)
@@ -120,24 +113,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         readAndStoreDeviceCalendarEventsOfTheDay(applicationContext)
         update(applicationContext, false)
 
-        binding = ActivityMainBinding.inflate(layoutInflater).also {
+        binding = MainActivityBinding.inflate(layoutInflater).also {
             setContentView(it.root)
         }
         ensureDirectionality()
-
-        if (enableNewInterface &&
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP &&
-            getSystemService<ActivityManager>()?.isLowRamDevice == false
-        ) {
-            window?.makeWallpaperTransparency()
-            binding.root.fitsSystemWindows = false
-            binding.root.background = MaterialShapeDrawable().also {
-                it.shapeAppearanceModel = ShapeAppearanceModel().withCornerSize(16.dp)
-            }
-            binding.root.clipToOutline = true
-            binding.root.alpha = 0.96f
-            binding.root.fitsSystemWindows = false
-        }
 
         binding.root.addDrawerListener(createDrawerListener())
 
@@ -177,12 +156,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             ) != PackageManager.PERMISSION_GRANTED
         ) askForCalendarPermission()
 
-        val persian = creationDateJdn.toPersianCalendar()
-        run {
-            val header = NavigationHeaderBinding.bind(binding.navigation.getHeaderView(0))
-            val season = Season.fromPersianCalendar(persian, coordinates)
-            header.seasonImage.setImageResource(season.imageId)
-            header.seasonImage.contentDescription = getString(season.nameStringId)
+        NavigationHeaderBinding.bind(binding.navigation.getHeaderView(0)).seasonsPager.also {
+            it.adapter = SeasonsAdapter()
+            it.currentItem = SeasonsAdapter.getCurrentIndex() - 3
+            it.setPageTransformer(MarginPageTransformer(8.dp.roundToInt()))
         }
 
         if (!appPrefs.getBoolean(CHANGE_LANGUAGE_IS_PROMOTED_ONCE, false)) {
@@ -191,7 +168,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         }
 
         if (mainCalendar == CalendarType.SHAMSI && isIranHolidaysEnabled &&
-            persian.year > supportedYearOfIranCalendar
+            creationDateJdn.toPersianDate().year > supportedYearOfIranCalendar
         ) showAppIsOutDatedSnackbar()
 
         applyAppLanguage(this)
@@ -432,7 +409,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             binding.navHostFragment.translationX =
                 slideOffset * drawerView.width.toFloat() * slidingDirection
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && blurs.isNotEmpty()) {
-                val blurIndex = ((blurs.size - 1) * slideOffset).roundToInt()
+                val blurIndex =
+                    if (slideOffset.isNaN()) 0 else ((blurs.size - 1) * slideOffset).roundToInt()
                 binding.navHostFragment.setRenderEffect(blurs[blurIndex])
                 binding.navigation.getHeaderView(0)
                     .setRenderEffect(blurs[blurs.size - 1 - blurIndex])
@@ -444,6 +422,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         override fun onDrawerOpened(drawerView: View) {
             super.onDrawerOpened(drawerView)
             onBackPressedCloseDrawerCallback.isEnabled = true
+
+            NavigationHeaderBinding.bind(binding.navigation.getHeaderView(0))
+                .seasonsPager.setCurrentItem(SeasonsAdapter.getCurrentIndex(), true)
         }
 
         override fun onDrawerClosed(drawerView: View) {

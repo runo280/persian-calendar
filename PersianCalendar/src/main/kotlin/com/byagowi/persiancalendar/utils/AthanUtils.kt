@@ -109,9 +109,9 @@ private fun startAthanBody(context: Context, prayTimeKey: String) = runCatching 
 }.onFailure(logException).let {}
 
 fun getEnabledAlarms(context: Context): Set<String> {
-    if (coordinates == null) return emptySet()
+    if (coordinates.value == null) return emptySet()
     return (context.appPrefs.getString(PREF_ATHAN_ALARM, null)?.trim() ?: return emptySet())
-        .splitIgnoreEmpty(",")
+        .splitFilterNotEmpty(",")
         .toSet()
 }
 
@@ -121,10 +121,10 @@ fun scheduleAlarms(context: Context) {
         ((context.appPrefs.getString(PREF_ATHAN_GAP, null)?.toDoubleOrNull()
             ?: .0) * 60.0 * 1000.0).toLong()
 
-    val prayTimes = coordinates?.calculatePrayTimes() ?: return
+    val prayTimes = coordinates.value?.calculatePrayTimes() ?: return
     // convert spacedComma separated string to a set
     enabledAlarms.forEachIndexed { i, name ->
-        scheduleAlarm(context, name, Calendar.getInstance().also {
+        scheduleAlarm(context, name, GregorianCalendar().also {
             // if (name == ISHA_KEY) return@also it.add(Calendar.SECOND, 5)
             val alarmTime = prayTimes.getFromStringId(getPrayTimeName(name))
             it[Calendar.HOUR_OF_DAY] = alarmTime.hours

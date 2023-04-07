@@ -7,11 +7,13 @@ import android.graphics.Rect
 import android.util.AttributeSet
 import android.view.View
 import com.byagowi.persiancalendar.entities.Jdn
+import com.byagowi.persiancalendar.global.isAstronomicalExtraFeaturesEnabled
 import com.byagowi.persiancalendar.global.isHighTextContrastEnabled
 import com.byagowi.persiancalendar.global.mainCalendarDigits
 import com.byagowi.persiancalendar.global.secondaryCalendar
 import com.byagowi.persiancalendar.global.secondaryCalendarDigits
 import com.byagowi.persiancalendar.utils.formatNumber
+import com.byagowi.persiancalendar.utils.isMoonInScorpio
 import com.byagowi.persiancalendar.variants.debugAssertNotNull
 import kotlin.math.min
 
@@ -98,8 +100,7 @@ class DayView(context: Context, attrs: AttributeSet? = null) : View(context, att
     private fun setAll(
         text: String, isToday: Boolean = false, isSelected: Boolean = false,
         hasEvent: Boolean = false, hasAppointment: Boolean = false, isHoliday: Boolean = false,
-        jdn: Jdn? = null, dayOfMonth: Int = -1, header: String = "",
-        isWeekNumber: Boolean = false
+        jdn: Jdn? = null, dayOfMonth: Int = -1, header: String = "", isWeekNumber: Boolean = false
     ) {
         this.text = text
         this.today = isToday
@@ -109,9 +110,13 @@ class DayView(context: Context, attrs: AttributeSet? = null) : View(context, att
         this.dayOfMonth = dayOfMonth
         this.isWeekNumber = isWeekNumber
         val secondaryCalendar = secondaryCalendar
-        this.header = if (secondaryCalendar == null || jdn == null) header else formatNumber(
-            jdn.toCalendar(secondaryCalendar).dayOfMonth, secondaryCalendarDigits
-        ) + (if (header.isEmpty()) "" else " $header")
+        this.header = listOfNotNull(
+            if (isAstronomicalExtraFeaturesEnabled && jdn != null && isMoonInScorpio(jdn))
+                sharedDayViewData?.scorpioSign else null,
+            if (secondaryCalendar == null || jdn == null) null else
+                formatNumber(jdn.toCalendar(secondaryCalendar).dayOfMonth, secondaryCalendarDigits),
+            header,
+        ).joinToString(" ")
         sharedDayViewData.debugAssertNotNull?.also { shared ->
             this.indicators = listOf(
                 hasAppointment to shared.appointmentIndicatorPaint,

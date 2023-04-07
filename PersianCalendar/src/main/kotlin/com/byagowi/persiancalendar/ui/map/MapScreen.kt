@@ -11,12 +11,14 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.navGraphViewModels
 import com.byagowi.persiancalendar.BuildConfig
 import com.byagowi.persiancalendar.PREF_LATITUDE
+import com.byagowi.persiancalendar.PREF_SHOW_QIBLA_IN_COMPASS
 import com.byagowi.persiancalendar.R
-import com.byagowi.persiancalendar.databinding.FragmentMapBinding
+import com.byagowi.persiancalendar.databinding.MapScreenBinding
 import com.byagowi.persiancalendar.entities.Jdn
 import com.byagowi.persiancalendar.global.coordinates
 import com.byagowi.persiancalendar.ui.astronomy.AstronomyViewModel
@@ -30,7 +32,7 @@ import com.byagowi.persiancalendar.ui.utils.setupLayoutTransition
 import com.byagowi.persiancalendar.ui.utils.setupUpNavigation
 import com.byagowi.persiancalendar.utils.appPrefs
 import com.byagowi.persiancalendar.utils.toCivilDate
-import com.byagowi.persiancalendar.utils.toJavaCalendar
+import com.byagowi.persiancalendar.utils.toGregorianCalendar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import io.github.persiancalendar.praytimes.Coordinates
 import kotlinx.coroutines.flow.collectLatest
@@ -39,11 +41,11 @@ import java.util.*
 import kotlin.math.abs
 import kotlin.math.absoluteValue
 
-class MapScreen : Fragment(R.layout.fragment_map) {
+class MapScreen : Fragment(R.layout.map_screen) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val binding = FragmentMapBinding.bind(view)
+        val binding = MapScreenBinding.bind(view)
         binding.toolbar.inflateMenu(R.menu.map_menu)
         val directPathButton = binding.toolbar.menu.findItem(R.id.menu_direct_path)
         val gridButton = binding.toolbar.menu.findItem(R.id.menu_grid)
@@ -86,23 +88,24 @@ class MapScreen : Fragment(R.layout.fragment_map) {
             else viewModel.addOneHour()
         }
         binding.endArrow.setOnLongClickListener { viewModel.addDays(10); true }
-        binding.date.setOnClickListener { viewModel.changeToTime(Date()) }
-        binding.date.setOnLongClickListener {
-            val currentJdn = Jdn(Date(viewModel.state.value.time).toJavaCalendar().toCivilDate())
+        binding.dateParent.setupLayoutTransition()
+        binding.date.setOnClickListener {
+            val currentJdn =
+                Jdn(Date(viewModel.state.value.time).toGregorianCalendar().toCivilDate())
             showDayPickerDialog(
-                activity ?: return@setOnLongClickListener true, currentJdn, R.string.accept
+                activity ?: return@setOnClickListener, currentJdn, R.string.accept
             ) { jdn -> viewModel.addDays(jdn - currentJdn) }
-            true
         }
+        binding.date.setOnLongClickListener { viewModel.changeToTime(Date()); true }
 
         fun bringGps() = activity?.let { showGPSLocationDialog(it, viewLifecycleOwner) }.let { }
         directPathButton.onClick {
-            if (coordinates == null) bringGps() else viewModel.toggleDirectPathMode()
+            if (coordinates.value == null) bringGps() else viewModel.toggleDirectPathMode()
         }
         gridButton.onClick { viewModel.toggleDisplayGrid() }
         myLocationButton.onClick { bringGps() }
         locationButton.onClick {
-            if (coordinates == null) bringGps() else viewModel.toggleDisplayLocation()
+            if (coordinates.value == null) bringGps() else viewModel.toggleDisplayLocation()
         }
         mapTypeButton.onClick {
             if (viewModel.state.value.mapType == MapType.None) {
@@ -162,18 +165,25 @@ class MapScreen : Fragment(R.layout.fragment_map) {
         binding.map.contentHeight = mapDraw.mapHeight.toFloat()
         binding.map.maxScale = 512f
 
+        val showKaaba =
+            binding.root.context.appPrefs.getBoolean(PREF_SHOW_QIBLA_IN_COMPASS, true)
+
+        fun onStateUpdate(state: MapState) {
+            mapDraw.drawKaaba = coordinates.value != null && state.displayLocation && showKaaba
+            mapDraw.updateMap(state.time, state.mapType)
+            binding.map.invalidate()
+            binding.date.text = mapDraw.maskFormattedTime
+            binding.timeBar.isVisible = mapDraw.maskFormattedTime.isNotEmpty()
+            directPathButton.icon?.alpha = if (state.isDirectPathMode) 127 else 255
+        }
+
         // Setup view model change listener
         // https://developer.android.com/topic/libraries/architecture/coroutines#lifecycle-aware
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.state
-                .flowWithLifecycle(viewLifecycleOwner.lifecycle, Lifecycle.State.STARTED)
-                .collectLatest { state ->
-                    mapDraw.updateMap(state.time, state.mapType)
-                    binding.map.invalidate()
-                    binding.date.text = mapDraw.maskFormattedTime
-                    binding.timeBar.isVisible = mapDraw.maskFormattedTime.isNotEmpty()
-                    directPathButton.icon?.alpha = if (state.isDirectPathMode) 127 else 255
-                }
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch { viewModel.state.collectLatest(::onStateUpdate) }
+                launch { coordinates.collectLatest { onStateUpdate(viewModel.state.value) } }
+            }
         }
     }
 }

@@ -1,8 +1,10 @@
 package com.byagowi.persiancalendar.utils
 
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.annotation.StringRes
+import com.byagowi.persiancalendar.IRAN_TIMEZONE_ID
 import com.byagowi.persiancalendar.LOG_TAG
 import com.byagowi.persiancalendar.R
 import com.byagowi.persiancalendar.entities.Jdn
@@ -14,20 +16,27 @@ import io.github.persiancalendar.praytimes.Coordinates
 import io.github.persiancalendar.praytimes.HighLatitudesMethod
 import io.github.persiancalendar.praytimes.PrayTimes
 import java.util.*
-import kotlin.math.abs
+import kotlin.math.absoluteValue
 
-fun String.splitIgnoreEmpty(delim: String) = this.split(delim).filter { it.isNotEmpty() }
+// .split() turns an empty string into an array with an empty string which is undesirable
+// for our use so this filter any non empty string after split, its name rhymes with .filterNotNull
+fun String.splitFilterNotEmpty(delim: String) = this.split(delim).filter { it.isNotEmpty() }
 
 fun Coordinates.calculatePrayTimes(
     calendar: GregorianCalendar = GregorianCalendar(),
     calculationMethod: CalculationMethod = com.byagowi.persiancalendar.global.calculationMethod,
     asrMethod: AsrMethod = com.byagowi.persiancalendar.global.asrMethod,
-    highLatitudesMethod: HighLatitudesMethod = com.byagowi.persiancalendar.global.highLatitudesMethod
+    highLatitudesMethod: HighLatitudesMethod = com.byagowi.persiancalendar.global.highLatitudesMethod,
 ): PrayTimes {
     val year = calendar[GregorianCalendar.YEAR]
     val month = calendar[GregorianCalendar.MONTH] + 1
     val day = calendar[GregorianCalendar.DAY_OF_MONTH]
-    val offset = calendar.timeZone.getOffset(calendar.time.time) / (60 * 60 * 1000.0)
+    val offset = (calendar.timeZone.getOffset(calendar.time.time) / (60 * 60 * 1000.0)).let {
+        if (it == 4.5 && Build.VERSION.SDK_INT <= Build.VERSION_CODES.TIRAMISU &&
+            calendar.timeZone.id == IRAN_TIMEZONE_ID
+        ) 3.5
+        else it
+    }
     return PrayTimes(
         calculationMethod, year, month, day, offset, this, asrMethod, highLatitudesMethod
     )
@@ -53,7 +62,8 @@ val CalculationMethod.titleStringId
 
 // Midnight sun occurs at latitudes from 65°44' to 90° north or south as
 // https://en.wikipedia.org/wiki/Midnight_sun
-val enableHighLatitudesConfiguration get() = coordinates?.let { abs(it.latitude) > 50 } ?: false
+val enableHighLatitudesConfiguration: Boolean
+    get() = coordinates.value?.let { it.latitude.absoluteValue > 50 } ?: false
 
 val HighLatitudesMethod.titleStringId
     get(): @StringRes Int = when (this) {

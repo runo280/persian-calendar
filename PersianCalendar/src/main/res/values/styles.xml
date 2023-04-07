@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
 
+    <attr name="appBarColor" format="reference" />
     <attr name="navigationBarColor" format="reference" />
     <attr name="colorMonthsBackground" format="reference" />
     <attr name="colorCard" format="reference" />
@@ -73,6 +74,9 @@
     </style>
 
     <style name="BaseDarkTheme" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:navigationBarColor" tools:targetApi="lollipop">
+            ?attr/navigationBarColor
+        </item>
         <item name="colorPrimaryContainer">@color/primary_container_dark</item>
         <item name="colorSecondaryContainer">@color/secondary_container_dark</item>
         <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
@@ -93,9 +97,13 @@
         <item name="android:statusBarColor" tools:targetApi="lollipop">
             @android:color/transparent
         </item>
+        <item name="popupMenuBackground">@drawable/popup_background</item>
     </style>
 
     <style name="BaseLightTheme" parent="Theme.Material3.Light.NoActionBar">
+        <item name="android:navigationBarColor" tools:targetApi="lollipop">
+            ?attr/navigationBarColor
+        </item>
         <item name="colorPrimaryContainer">@color/primary_container_light</item>
         <item name="colorSecondaryContainer">@color/secondary_container_light</item>
         <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
@@ -116,6 +124,7 @@
         <item name="android:statusBarColor" tools:targetApi="lollipop">
             @android:color/transparent
         </item>
+        <item name="popupMenuBackground">@drawable/popup_background</item>
     </style>
 
     <!-- Their actual definition is in v31/styles.xml -->
@@ -132,10 +141,8 @@
         <item name="colorPrimary">@color/dark_accent</item>
         <item name="colorPrimaryDark">@color/dark_primary_dark</item>
         <item name="colorAccent">@color/dark_accent</item>
-        <item name="android:navigationBarColor" tools:targetApi="lollipop">
-            @color/dark_primary_dark
-        </item>
-        <item name="navigationBarColor">@color/dark_primary</item>
+        <item name="navigationBarColor">@color/dark_primary_dark</item>
+        <item name="appBarColor">@color/dark_primary</item>
 
         <item name="colorCard">@color/dark_card_background</item>
         <item name="colorBackground">@color/dark_background</item>
@@ -180,10 +187,8 @@
         <item name="colorPrimary">@color/black_accent</item>
         <item name="colorPrimaryDark">@color/black_primary_dark</item>
         <item name="colorAccent">@color/black_accent</item>
-        <item name="android:navigationBarColor" tools:targetApi="lollipop">
-            @color/black_primary_dark
-        </item>
-        <item name="navigationBarColor">@color/black_primary</item>
+        <item name="navigationBarColor">@color/black_primary_dark</item>
+        <item name="appBarColor">@color/black_primary</item>
 
         <item name="colorCard">@color/black_card_background</item>
         <item name="colorBackground">@color/black_background</item>
@@ -226,10 +231,8 @@
         <item name="colorPrimary">@color/light_primary</item>
         <item name="colorPrimaryDark">@color/light_primary_dark</item>
         <item name="colorAccent">@color/light_accent</item>
-        <item name="android:navigationBarColor" tools:targetApi="lollipop">
-            @color/light_primary_dark
-        </item>
-        <item name="navigationBarColor">@color/light_primary</item>
+        <item name="navigationBarColor">@color/light_primary_dark</item>
+        <item name="appBarColor">@color/light_primary</item>
 
         <item name="colorCard">@color/light_card_background</item>
         <item name="colorBackground">@color/light_background</item>
@@ -272,10 +275,8 @@
         <item name="colorPrimary">@color/blue_primary</item>
         <item name="colorPrimaryDark">@color/blue_primary</item>
         <item name="colorAccent">@color/blue_accent</item>
-        <item name="android:navigationBarColor" tools:targetApi="lollipop">
-            @color/blue_icon_drawer
-        </item>
-        <item name="navigationBarColor">@color/blue_primary</item>
+        <item name="navigationBarColor">@color/blue_icon_drawer</item>
+        <item name="appBarColor">@color/blue_primary</item>
         <item name="android:windowLightNavigationBar" tools:ignore="NewApi">false</item>
 
         <item name="colorCard">@color/blue_card_background</item>
@@ -319,10 +320,8 @@
         <item name="colorPrimary">@color/modern_accent</item>
         <item name="colorPrimaryDark">@color/modern_primary</item>
         <item name="colorAccent">@color/modern_accent</item>
-        <item name="android:navigationBarColor" tools:targetApi="lollipop">
-            @color/modern_primary
-        </item>
         <item name="navigationBarColor">@color/modern_primary</item>
+        <item name="appBarColor">@color/modern_primary</item>
         <item name="android:windowLightNavigationBar" tools:ignore="NewApi">true</item>
 
         <item name="colorCard">@color/modern_card_background</item>
@@ -450,6 +449,18 @@
         <item name="android:maxLines">1</item>
         <item name="autoSizeMinTextSize">8dp</item>
         <item name="autoSizeTextType">uniform</item>
+    </style>
+
+    <style name="shapeAppearanceTopCornerExtraLarge" parent="ShapeAppearance.Material3.Corner.ExtraLarge">
+        <item name="cornerFamily">?attr/shapeCornerFamily</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+
+    <style name="shapeAppearanceBottomCornerExtraLarge" parent="ShapeAppearance.Material3.Corner.ExtraLarge">
+        <item name="cornerFamily">?attr/shapeCornerFamily</item>
+        <item name="cornerSizeTopLeft">0dp</item>
+        <item name="cornerSizeTopRight">0dp</item>
     </style>
 
     <style name="AppOutlinedButton" parent="Widget.Material3.Button.OutlinedButton" />

@@ -16,7 +16,6 @@ import android.text.SpannableString
 import android.text.style.ReplacementSpan
 import android.text.util.Linkify
 import android.view.View
-import android.widget.Toast
 import androidx.core.graphics.applyCanvas
 import androidx.core.graphics.createBitmap
 import androidx.core.os.postDelayed
@@ -27,7 +26,7 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.byagowi.persiancalendar.R
-import com.byagowi.persiancalendar.databinding.FragmentLicensesBinding
+import com.byagowi.persiancalendar.databinding.LicensesScreenBinding
 import com.byagowi.persiancalendar.generated.EventType
 import com.byagowi.persiancalendar.generated.gregorianEvents
 import com.byagowi.persiancalendar.generated.irregularRecurringEvents
@@ -46,7 +45,7 @@ import com.google.android.material.sidesheet.SideSheetCallback
 import com.google.android.material.transition.MaterialFadeThrough
 import kotlin.math.roundToInt
 
-class LicensesScreen : Fragment(R.layout.fragment_licenses) {
+class LicensesScreen : Fragment(R.layout.licenses_screen) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         exitTransition = MaterialFadeThrough()
@@ -57,7 +56,7 @@ class LicensesScreen : Fragment(R.layout.fragment_licenses) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val binding = FragmentLicensesBinding.bind(view)
+        val binding = LicensesScreenBinding.bind(view)
         binding.appBar.toolbar.let {
             it.setTitle(R.string.about_license_title)
             it.setupUpNavigation()
@@ -72,7 +71,7 @@ Nepali Events: ${nepaliEvents.size + 1}
 Irregular Recurring Events: ${irregularRecurringEvents.size + 1}
 
 Sources:
-${EventType.values().joinToString("\n") { "${it.name}: ${it.source}" }}"""
+${enumValues<EventType>().joinToString("\n") { "${it.name}: ${it.source}" }}"""
         Linkify.addLinks(binding.eventsStats, Linkify.WEB_URLS or Linkify.EMAIL_ADDRESSES)
         val sideSheet = SideSheetBehavior.from(binding.standardSideSheet)
         sideSheet.addCallback(object : SideSheetCallback() {
@@ -99,24 +98,24 @@ ${EventType.values().joinToString("\n") { "${it.name}: ${it.source}" }}"""
                 return BitmapDrawable(view.context.resources, bitmap)
             }
             listOf(
-                "GPLv3" to view.context.getCompatDrawable(R.drawable.ic_info),
-                KotlinVersion.CURRENT.toString() to createTextIcon("Kotlin"),
-                "API ${Build.VERSION.SDK_INT}" to
-                        view.context.getCompatDrawable(R.drawable.ic_motorcycle)
-            ).mapIndexed { i, (title, icon) ->
-                // Easter egg testing dialog
-                var clickCount = 0
-                it.add(title).setIcon(icon).onClick {
-                    val activity = activity ?: return@onClick
-                    when (++clickCount % 10) {
-                        0 -> listOf(
-                            ::showPeriodicTableDialog,
-                            ::showSpringDemoDialog,
-                            ::showFlingDemoDialog,
-                        )[i](activity)
-                        9 -> Toast.makeText(activity, "One more to go!", Toast.LENGTH_SHORT).show()
-                    }
-                }
+                Triple(
+                    "GPLv3",
+                    view.context.getCompatDrawable(R.drawable.ic_info),
+                    ::showShaderSandboxDialog
+                ),
+                Triple(
+                    KotlinVersion.CURRENT.toString(),
+                    createTextIcon("Kotlin"),
+                    ::showSpringDemoDialog
+                ),
+                Triple(
+                    "API ${Build.VERSION.SDK_INT}",
+                    view.context.getCompatDrawable(R.drawable.ic_motorcycle),
+                    ::showFlingDemoDialog
+                ),
+            ).forEach { (title, icon, dialog) ->
+                val clickHandler = createEasterEggClickHandler(dialog)
+                it.add(title).setIcon(icon).onClick { clickHandler(activity) }
             }
         }
 

@@ -1,6 +1,7 @@
 package com.byagowi.persiancalendar
 
 import android.icu.util.ChineseCalendar
+import com.byagowi.persiancalendar.entities.Jdn
 import com.byagowi.persiancalendar.entities.Season
 import com.byagowi.persiancalendar.ui.astronomy.ChineseZodiac
 import com.byagowi.persiancalendar.ui.astronomy.LunarAge
@@ -88,8 +89,9 @@ class AstronomyTests {
 
     @Test
     fun `Season from Persian calendar`() {
-        val noLocationSeasons =
-            (1..12).map { Season.fromPersianCalendar(PersianDate(1400, it, 29), null) }
+        val noLocationSeasons = (1..12).map {
+            Season.fromDate(Jdn(PersianDate(1400, it, 28)).toGregorianCalendar().time, null)
+        }
         listOf(
             1..3 to Season.SPRING, 4..6 to Season.SUMMER,
             7..9 to Season.AUTUMN, 10..12 to Season.WINTER
@@ -98,17 +100,13 @@ class AstronomyTests {
         }
         val northernHemisphereSeason = (1..12).map {
             val kathmandu = Coordinates(27.7172, 85.324, 1_400.0)
-            Season.fromPersianCalendar(PersianDate(1400, it, 29), kathmandu)
+            Season.fromDate(Jdn(PersianDate(1400, it, 28)).toGregorianCalendar().time, kathmandu)
         }
-        listOf(
-            1..3 to Season.SPRING, 4..6 to Season.SUMMER,
-            7..9 to Season.AUTUMN, 10..12 to Season.WINTER
-        ).forEach { (range, season) ->
-            range.forEach { assertThat(northernHemisphereSeason[it - 1]).isEqualTo(season) }
-        }
+        assertThat(noLocationSeasons).isEqualTo(northernHemisphereSeason)
+
         val southernHemisphereSeasons = (1..12).map {
             val nirobi = Coordinates(-1.286389, 36.817222, 1_795.0)
-            Season.fromPersianCalendar(PersianDate(1400, it, 29), nirobi)
+            Season.fromDate(Jdn(PersianDate(1400, it, 28)).toGregorianCalendar().time, nirobi)
         }
         listOf(
             1..3 to Season.AUTUMN, 4..6 to Season.WINTER,
@@ -122,8 +120,8 @@ class AstronomyTests {
     fun `Season equinox`() {
         val seasons = seasons(2020)
         listOf(
-            seasons.marchEquinox to 1584676197177, seasons.juneSolstice to 1592689413689,
-            seasons.septemberEquinox to 1600781456763, seasons.decemberSolstice to 1608544960981
+            seasons.marchEquinox to 1584676196290, seasons.juneSolstice to 1592689411284,
+            seasons.septemberEquinox to 1600781459379, seasons.decemberSolstice to 1608544962334
         ).map { (it, time) -> assertThat(it.toMillisecondsSince1970()).isEqualTo(time) }
     }
 

@@ -17,8 +17,8 @@ import androidx.core.graphics.withTranslation
 import androidx.dynamicanimation.animation.FlingAnimation
 import androidx.dynamicanimation.animation.FloatValueHolder
 import com.byagowi.persiancalendar.R
-import com.byagowi.persiancalendar.ui.common.SolarDraw
 import com.byagowi.persiancalendar.ui.common.ZoomableView
+import com.byagowi.persiancalendar.ui.common.SolarDraw
 import com.byagowi.persiancalendar.ui.utils.dp
 import com.byagowi.persiancalendar.ui.utils.resolveColor
 import com.byagowi.persiancalendar.variants.debugLog
@@ -53,7 +53,7 @@ class SolarView(context: Context, attrs: AttributeSet? = null) : ZoomableView(co
                     resources.getInteger(android.R.integer.config_mediumAnimTime).toLong()
                 animator.interpolator = AccelerateDecelerateInterpolator()
                 animator.addUpdateListener { _ ->
-                    val fraction = ((animator.animatedValue as? Float) ?: 0f)
+                    val fraction = animator.animatedValue as? Float ?: 0f
                     ranges.indices.forEach {
                         ranges[it][0] = MathUtils.lerp(
                             iauRanges[it][0], tropicalRanges[it][0], fraction
@@ -99,7 +99,7 @@ class SolarView(context: Context, attrs: AttributeSet? = null) : ZoomableView(co
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
         parent?.requestDisallowInterceptTouchEvent(true)
         super.dispatchTouchEvent(event)
-        if (mode != AstronomyMode.Earth || saveScale != 1f) return true
+        if (mode != AstronomyMode.Earth || currentScale != 1f) return true
         val r = width / 2
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
@@ -210,10 +210,10 @@ class SolarView(context: Context, attrs: AttributeSet? = null) : ZoomableView(co
                 canvas.drawPath(trianglePath, sunIndicatorPaint)
             }
         }
-        val moonDegree = state.moon.elon.toFloat()
+        val moonDegree = state.moon.lon.toFloat()
         canvas.drawCircle(radius, radius, radius * .3f, moonOrbitPaint)
         canvas.withRotation(-moonDegree + 90, radius, radius) {
-            val moonDistance = state.moon.vec.length() / 0.002569 // Lunar distance in AU
+            val moonDistance = state.moon.dist / 0.002569 // Lunar distance in AU
             solarDraw.moon(
                 this, state.sun, state.moon, radius,
                 radius * moonDistance.toFloat() * .7f, cr / 1.9f

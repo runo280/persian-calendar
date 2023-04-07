@@ -42,10 +42,10 @@ enum class CalendarType(
         return monthLength - (Jdn(this, year, month, monthLength) - dayOfWeek + 1).dayOfWeek
     }
 
-    fun getYearMonths(year: Int) =
+    fun getYearMonths(year: Int): Int =
         (Jdn(this, year + 1, 1, 1) - 1).toCalendar(this).month
 
-    fun getMonthLength(year: Int, month: Int) =
+    fun getMonthLength(year: Int, month: Int): Int =
         Jdn(getMonthStartFromMonthsDistance(year, month, 1)) - Jdn(this, year, month, 1)
 
     private fun getMonthStartFromMonthsDistance(
@@ -58,10 +58,10 @@ enum class CalendarType(
     }
 
     fun getMonthsDistance(baseJdn: Jdn, toJdn: Jdn): Int = when (this) {
-        ISLAMIC -> baseJdn.toIslamicCalendar().monthsDistanceTo(toJdn.toIslamicCalendar())
-        GREGORIAN -> baseJdn.toGregorianCalendar().monthsDistanceTo(toJdn.toGregorianCalendar())
-        SHAMSI -> baseJdn.toPersianCalendar().monthsDistanceTo(toJdn.toPersianCalendar())
-        NEPALI -> baseJdn.toNepaliCalendar().monthsDistanceTo(toJdn.toNepaliCalendar())
+        ISLAMIC -> baseJdn.toIslamicDate().monthsDistanceTo(toJdn.toIslamicDate())
+        GREGORIAN -> baseJdn.toCivilDate().monthsDistanceTo(toJdn.toCivilDate())
+        SHAMSI -> baseJdn.toPersianDate().monthsDistanceTo(toJdn.toPersianDate())
+        NEPALI -> baseJdn.toNepaliDate().monthsDistanceTo(toJdn.toNepaliDate())
     }
 
     fun getMonthStartFromMonthsDistance(baseJdn: Jdn, monthsDistance: Int): AbstractDate {

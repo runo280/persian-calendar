@@ -25,7 +25,7 @@ import com.byagowi.persiancalendar.utils.formatDateAndTime
 import com.byagowi.persiancalendar.utils.formatNumber
 import com.byagowi.persiancalendar.utils.getA11yDaySummary
 import com.byagowi.persiancalendar.utils.getZodiacInfo
-import com.byagowi.persiancalendar.utils.toJavaCalendar
+import com.byagowi.persiancalendar.utils.toGregorianCalendar
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import io.github.cosinekitty.astronomy.seasons
 import java.util.*
@@ -120,13 +120,14 @@ class CalendarsView(context: Context, attrs: AttributeSet? = null) : FrameLayout
         if (mainCalendar == chosenCalendarType && chosenCalendarType == CalendarType.SHAMSI) {
             if (date.month == 12 && date.dayOfMonth >= 20 || date.month == 1 && date.dayOfMonth == 1) {
                 val addition = if (date.month == 12) 1 else 0
+                val equinoxYear = date.year + addition
+                val calendar = Date(
+                    seasons(jdn.toCivilDate().year).marchEquinox.toMillisecondsSince1970()
+                ).toGregorianCalendar()
                 equinox = context.getString(
                     R.string.spring_equinox,
-                    formatNumber(date.year + addition),
-                    Date(
-                        seasons(jdn.toGregorianCalendar().year).marchEquinox
-                            .toMillisecondsSince1970()
-                    ).toJavaCalendar().formatDateAndTime()
+                    formatNumber(equinoxYear),
+                    calendar.formatDateAndTime()
                 )
             }
         }

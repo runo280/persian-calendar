@@ -189,7 +189,7 @@
     <string name="qibla">قبله</string>
     <string name="outdated_app">به دلیل قدیمی بودن نسخه مناسبت‌های ممکن صحیح نباشد</string>
     <string name="update">بروزرسانی</string>
-    <string name="spring_equinox">لحظه اعتدال بهاری و تحویل سال %1$s: %2$s</string>
+    <string name="spring_equinox">لحظهٔ اعتدال بهاری و تحویل سال %1$s: %2$s</string>
     <string name="shift_work_settings">تنظیم شیفت‌کاری</string>
     <string name="ask_user_to_set_location">برای نمایش اوقات شرعی مکان خود را در تنظیمات انتخاب نمایید</string>
     <string name="remove">حذف</string>
@@ -327,6 +327,13 @@
     <string name="wednesday">بدھ</string>
     <string name="thursday">جمعرات</string>
     <string name="friday">جمعہ</string>
+    <string name="saturday_short">س</string>
+    <string name="sunday_short">ا</string>
+    <string name="monday_short">پ</string>
+    <string name="tuesday_short">م</string>
+    <string name="wednesday_short">ب</string>
+    <string name="thursday_short">ج</string>
+    <string name="friday_short">ج</string>
     <string name="sun_view">خورشیدنما</string>
     <string name="asr_hanafi_juristic">شیوهٔ محاسبهٔ اذان عصر حنفی</string>
     <string name="country_emoji">🇵🇰🇮🇳</string>

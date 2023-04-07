@@ -49,8 +49,8 @@ import com.byagowi.persiancalendar.PREF_OTHER_CALENDARS_KEY
 import com.byagowi.persiancalendar.PREF_SECONDARY_CALENDAR_IN_TABLE
 import com.byagowi.persiancalendar.R
 import com.byagowi.persiancalendar.TIME_NAMES
+import com.byagowi.persiancalendar.databinding.CalendarScreenBinding
 import com.byagowi.persiancalendar.databinding.EventsTabContentBinding
-import com.byagowi.persiancalendar.databinding.FragmentCalendarBinding
 import com.byagowi.persiancalendar.databinding.OwghatTabContentBinding
 import com.byagowi.persiancalendar.databinding.OwghatTabPlaceholderBinding
 import com.byagowi.persiancalendar.entities.CalendarEvent
@@ -130,9 +130,9 @@ import kotlinx.html.thead
 import kotlinx.html.tr
 import kotlinx.html.unsafe
 
-class CalendarScreen : Fragment(R.layout.fragment_calendar) {
+class CalendarScreen : Fragment(R.layout.calendar_screen) {
 
-    private var mainBinding: FragmentCalendarBinding? = null
+    private var mainBinding: CalendarScreenBinding? = null
     private var searchView: SearchView? = null
 
     override fun onDestroyView() {
@@ -155,7 +155,7 @@ class CalendarScreen : Fragment(R.layout.fragment_calendar) {
 
     private fun enableOwghatTab(context: Context): Boolean {
         val appPrefs = context.appPrefs
-        return coordinates != null || // if coordinates is set, should be shown
+        return coordinates.value != null || // if coordinates is set, should be shown
                 (language.isPersian && // The placeholder isn't translated to other languages
                         // The user is already dismissed the third tab
                         !appPrefs.getBoolean(PREF_DISABLE_OWGHAT, false) &&
@@ -175,7 +175,7 @@ class CalendarScreen : Fragment(R.layout.fragment_calendar) {
     }
 
     private fun createOwghatTab(inflater: LayoutInflater, container: ViewGroup?): View {
-        coordinates ?: return createOwghatTabPlaceholder(inflater, container)
+        coordinates.value ?: return createOwghatTabPlaceholder(inflater, container)
         val binding = OwghatTabContentBinding.inflate(inflater, container, false)
 
         var isExpanded = false
@@ -232,7 +232,7 @@ class CalendarScreen : Fragment(R.layout.fragment_calendar) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val binding = FragmentCalendarBinding.bind(view)
+        val binding = CalendarScreenBinding.bind(view)
         mainBinding = binding
 
         val tabs = listOfNotNull(
@@ -364,7 +364,7 @@ class CalendarScreen : Fragment(R.layout.fragment_calendar) {
         }
     }
 
-    private fun updateToolbar(binding: FragmentCalendarBinding, date: AbstractDate) {
+    private fun updateToolbar(binding: CalendarScreenBinding, date: AbstractDate) {
         val toolbar = binding.appBar.toolbar
         val secondaryCalendar = secondaryCalendar
         if (secondaryCalendar == null) {
@@ -380,7 +380,7 @@ class CalendarScreen : Fragment(R.layout.fragment_calendar) {
         registerForActivityResult(object : ActivityResultContract<Jdn, Void?>() {
             override fun parseResult(resultCode: Int, intent: Intent?): Void? = null
             override fun createIntent(context: Context, input: Jdn): Intent {
-                val time = input.toJavaCalendar().timeInMillis
+                val time = input.toGregorianCalendar().timeInMillis
                 return Intent(Intent.ACTION_INSERT)
                     .setData(CalendarContract.Events.CONTENT_URI)
                     .putExtra(
@@ -535,9 +535,9 @@ class CalendarScreen : Fragment(R.layout.fragment_calendar) {
     }
 
     private fun setOwghat(owghatBinding: OwghatTabContentBinding, jdn: Jdn, isToday: Boolean) {
-        val coordinates = coordinates ?: return
+        val coordinates = coordinates.value ?: return
 
-        val date = jdn.toJavaCalendar()
+        val date = jdn.toGregorianCalendar()
         val prayTimes = coordinates.calculatePrayTimes(date)
         owghatBinding.timesFlow.update(prayTimes)
         owghatBinding.moonView.isVisible = !isToday
@@ -645,7 +645,7 @@ class CalendarScreen : Fragment(R.layout.fragment_calendar) {
                 showMonthOverviewDialog(activity ?: return@onClick, viewModel.selectedMonth.value)
             }
         }
-        if (coordinates != null) {
+        if (coordinates.value != null) {
             toolbar.menu.add(R.string.month_pray_times).also {
                 it.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
                 it.onClick {
@@ -680,7 +680,7 @@ class CalendarScreen : Fragment(R.layout.fragment_calendar) {
     }
 
     private fun createOwghatHtmlReport(date: AbstractDate): String = createHTML().html {
-        val coordinates = coordinates ?: return@html
+        val coordinates = coordinates.value ?: return@html
         attributes["lang"] = language.language
         attributes["dir"] = if (resources.isRtl) "rtl" else "ltr"
         head {
@@ -716,7 +716,7 @@ class CalendarScreen : Fragment(R.layout.fragment_calendar) {
                         tr {
                             val prayTimes = coordinates.calculatePrayTimes(
                                 Jdn(mainCalendar.createDate(date.year, date.month, day))
-                                    .toJavaCalendar()
+                                    .toGregorianCalendar()
                             )
                             th { +formatNumber(day + 1) }
                             TIME_NAMES.forEach {

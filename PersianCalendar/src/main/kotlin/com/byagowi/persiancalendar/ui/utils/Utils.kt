@@ -7,9 +7,13 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.graphics.Path
+import android.graphics.RectF
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.ShapeDrawable
 import android.os.Build
 import android.util.Base64
@@ -56,6 +60,9 @@ import com.byagowi.persiancalendar.utils.logException
 import com.byagowi.persiancalendar.variants.debugAssertNotNull
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.shape.MaterialShapeDrawable
+import com.google.android.material.shape.ShapeAppearanceModel
+import com.google.android.material.shape.ShapeAppearancePathProvider
 import java.io.ByteArrayOutputStream
 import java.io.File
 
@@ -158,6 +165,7 @@ fun Context.getCompatDrawable(@DrawableRes drawableRes: Int) =
 fun Context.getAnimatedDrawable(@DrawableRes animatedDrawableRes: Int) =
     AnimatedVectorDrawableCompat.create(this, animatedDrawableRes)
 
+// https://stackoverflow.com/a/48421144 but doesn't seem to be needed anymore?
 fun AppBarLayout.hideToolbarBottomShadow() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) outlineProvider = null
 }
@@ -251,9 +259,3 @@ fun prepareViewForRendering(view: View, width: Int, height: Int) {
     )
     view.layout(0, 0, width, height)
 }
-
-// Whether we can enable the new interface
-val canEnableNewInterface = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
-
-// Make the new interface for Android 12 opt-out instead of opt-in
-val shouldEnableNewInterface = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S

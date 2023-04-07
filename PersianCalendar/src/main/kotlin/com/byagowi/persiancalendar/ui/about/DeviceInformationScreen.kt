@@ -9,7 +9,6 @@ import android.graphics.BitmapShader
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.RuntimeShader
 import android.graphics.Shader
 import android.hardware.Sensor
 import android.hardware.SensorManager
@@ -27,7 +26,6 @@ import android.view.InputDevice
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.annotation.ColorInt
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.content.getSystemService
@@ -45,8 +43,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.byagowi.persiancalendar.R
 import com.byagowi.persiancalendar.databinding.DeviceInformationItemBinding
-import com.byagowi.persiancalendar.databinding.FragmentDeviceInformationBinding
-import com.byagowi.persiancalendar.generated.demoRuntimeShader
+import com.byagowi.persiancalendar.databinding.DeviceInformationScreenBinding
 import com.byagowi.persiancalendar.ui.utils.copyToClipboard
 import com.byagowi.persiancalendar.ui.utils.getCompatDrawable
 import com.byagowi.persiancalendar.ui.utils.layoutInflater
@@ -80,11 +77,11 @@ import kotlin.math.hypot
  * @author MEHDI DIMYADI
  * MEHDIMYADI
  */
-class DeviceInformationScreen : Fragment(R.layout.fragment_device_information) {
+class DeviceInformationScreen : Fragment(R.layout.device_information_screen) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val binding = FragmentDeviceInformationBinding.bind(view)
+        val binding = DeviceInformationScreenBinding.bind(view)
         binding.toolbar.let {
             it.setTitle(R.string.device_information)
             it.setupUpNavigation()
@@ -138,25 +135,27 @@ class DeviceInformationScreen : Fragment(R.layout.fragment_device_information) {
         }
 
         binding.bottomNavigation.menu.also {
-            var clickCount = 0
             listOf(
-                R.drawable.ic_developer to Build.VERSION.RELEASE,
-                R.drawable.ic_settings to "API " + Build.VERSION.SDK_INT,
-                R.drawable.ic_motorcycle to
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) Build.SUPPORTED_ABIS[0]
-                        else @Suppress("DEPRECATION") Build.CPU_ABI,
-                R.drawable.ic_device_information_white to Build.MODEL
-            ).forEachIndexed { i, (icon, title) ->
-                it.add(title).setIcon(icon).onClick {
-                    val activity = activity ?: return@onClick
-                    when (++clickCount % 10) {
-                        0 -> listOf(
-                            ::showHiddenUiDialog, ::showSensorTestDialog,
-                            ::showInputDeviceTestDialog, ::showColorPickerDialog
-                        )[i](activity)
-                        9 -> Toast.makeText(activity, "One more to go!", Toast.LENGTH_SHORT).show()
-                    }
-                }
+                Triple(R.drawable.ic_developer, Build.VERSION.RELEASE, ::showHiddenUiDialog),
+                Triple(
+                    R.drawable.ic_settings,
+                    "API " + Build.VERSION.SDK_INT,
+                    ::showSensorTestDialog
+                ),
+                Triple(
+                    R.drawable.ic_motorcycle,
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) Build.SUPPORTED_ABIS[0]
+                    else @Suppress("DEPRECATION") Build.CPU_ABI,
+                    ::showInputDeviceTestDialog
+                ),
+                Triple(
+                    R.drawable.ic_device_information_white,
+                    Build.MODEL,
+                    ::showColorPickerDialog
+                ),
+            ).forEach { (icon, title, dialog) ->
+                val clickHandler = createEasterEggClickHandler(dialog)
+                it.add(title).setIcon(icon).onClick { clickHandler(activity) }
             }
         }
     }
@@ -187,29 +186,30 @@ fun <T> T.circularRevealFromMiddle() where T : View?, T : CircularRevealWidget {
 
 class CheckerBoard(context: Context, attrs: AttributeSet? = null) : View(context, attrs) {
     private val checkerBoard = createCheckerRoundedBoard(40f, 8f, Color.parseColor("#100A0A0A"))
-    private val startTime = System.nanoTime()
-    private val shader by lazy(LazyThreadSafetyMode.NONE) {
-        runCatching {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return@runCatching null
-            RuntimeShader(demoRuntimeShader).also {
-                val width = context.resources?.displayMetrics?.widthPixels?.toFloat() ?: 800f
-                val height = context.resources?.displayMetrics?.heightPixels?.toFloat() ?: 800f
-                it.setFloatUniform("iResolution", width, height)
-            }
-        }.onFailure(logException).getOrNull().debugAssertNotNull
-    }
-    private val shaderPaint = Paint().also {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            it.shader = shader
-        }
-    }
+    // private val startTime = System.nanoTime()
+    // private val shader by lazy(LazyThreadSafetyMode.NONE) {
+    //     runCatching {
+    //         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return@runCatching null
+    //         RuntimeShader(demoRuntimeShader).also {
+    //             val width = context.resources?.displayMetrics?.widthPixels?.toFloat() ?: 800f
+    //             val height = context.resources?.displayMetrics?.heightPixels?.toFloat() ?: 800f
+    //             it.setFloatUniform("iResolution", width, height)
+    //         }
+    //     }.onFailure(logException).getOrNull().debugAssertNotNull
+    // }
+    // private val shaderPaint = Paint().also {
+    //     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+    //         it.shader = shader
+    //     }
+    // }
 
     override fun onDraw(canvas: Canvas) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            shader?.setFloatUniform("iTime", (System.nanoTime() - startTime) / 1e9f)
-            canvas.drawPaint(shaderPaint)
-            invalidate()
-        } else canvas.drawPaint(checkerBoard)
+        // if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        //     shader?.setFloatUniform("iTime", (System.nanoTime() - startTime) / 1e9f)
+        //     canvas.drawPaint(shaderPaint)
+        //     invalidate()
+        // } else
+        canvas.drawPaint(checkerBoard)
     }
 }
 

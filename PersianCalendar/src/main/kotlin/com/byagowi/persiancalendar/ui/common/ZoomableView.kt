@@ -7,7 +7,10 @@ import android.graphics.PointF
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
+import android.view.VelocityTracker
 import android.view.View
+import androidx.dynamicanimation.animation.FlingAnimation
+import androidx.dynamicanimation.animation.FloatValueHolder
 import kotlin.math.absoluteValue
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -25,7 +28,7 @@ open class ZoomableView(context: Context, attrs: AttributeSet? = null) : View(co
     var maxScale = 16f
     private var redundantXSpace = 0f
     private var redundantYSpace = 0f
-    protected var saveScale = 1f
+    protected var currentScale = 1f
     private var right = 0f
     private var bottom = 0f
     private var originalWidth = 0f
@@ -41,25 +44,25 @@ open class ZoomableView(context: Context, attrs: AttributeSet? = null) : View(co
 
         override fun onScale(detector: ScaleGestureDetector): Boolean {
             var scaleFactor = detector.scaleFactor
-            val origScale = saveScale
-            saveScale *= scaleFactor
-            if (saveScale > maxScale) {
-                saveScale = maxScale
+            val origScale = currentScale
+            currentScale *= scaleFactor
+            if (currentScale > maxScale) {
+                currentScale = maxScale
                 scaleFactor = maxScale / origScale
-            } else if (saveScale < minScale) {
-                saveScale = minScale
+            } else if (currentScale < minScale) {
+                currentScale = minScale
                 scaleFactor = minScale / origScale
             }
-            right = width * saveScale - width - 2 * redundantXSpace * saveScale
-            bottom = height * saveScale - height - 2 * redundantYSpace * saveScale
-            if (originalWidth * saveScale <= width || originalHeight * saveScale <= height) {
+            right = width * currentScale - width - 2 * redundantXSpace * currentScale
+            bottom = height * currentScale - height - 2 * redundantYSpace * currentScale
+            if (originalWidth * currentScale <= width || originalHeight * currentScale <= height) {
                 viewMatrix.postScale(scaleFactor, scaleFactor, width / 2f, height / 2f)
                 if (scaleFactor < 1) {
                     viewMatrix.getValues(matrix)
                     val x = matrix[Matrix.MTRANS_X]
                     val y = matrix[Matrix.MTRANS_Y]
                     if (scaleFactor < 1) {
-                        if ((originalWidth * saveScale).roundToInt() < width) {
+                        if ((originalWidth * currentScale).roundToInt() < width) {
                             if (y < -bottom) viewMatrix.postTranslate(0f, -(y + bottom))
                             else if (y > 0) viewMatrix.postTranslate(0f, -y)
                         } else {
@@ -93,7 +96,7 @@ open class ZoomableView(context: Context, attrs: AttributeSet? = null) : View(co
         val scaleY = height / contentHeight
         val scale = min(scaleX, scaleY)
         viewMatrix.setScale(scale, scale)
-        saveScale = 1f
+        currentScale = 1f
 
         // Center the image
         redundantYSpace = height - scale * contentHeight
@@ -103,59 +106,84 @@ open class ZoomableView(context: Context, attrs: AttributeSet? = null) : View(co
         viewMatrix.postTranslate(redundantXSpace, redundantYSpace)
         originalWidth = width - 2 * redundantXSpace
         originalHeight = height - 2 * redundantYSpace
-        right = width * saveScale - width - 2 * redundantXSpace * saveScale
-        bottom = height * saveScale - height - 2 * redundantYSpace * saveScale
+        right = width * currentScale - width - 2 * redundantXSpace * currentScale
+        bottom = height * currentScale - height - 2 * redundantYSpace * currentScale
     }
 
     var onClick = fun(_: Float, _: Float) {}
 
-    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
-        scaleDetector.onTouchEvent(event)
+    private var velocityTracker: VelocityTracker? = null
+    private val horizontalFling = FlingAnimation(FloatValueHolder())
+    private val verticalFling = FlingAnimation(FloatValueHolder())
+
+    init {
+        horizontalFling.addUpdateListener { _, _, velocity ->
+            applyVelocity(velocity / currentScale / 5, 0f)
+            invalidate()
+        }
+        verticalFling.addUpdateListener { _, _, velocity ->
+            applyVelocity(0f, velocity / currentScale / 5)
+            invalidate()
+        }
+    }
+
+    private fun applyVelocity(deltaX: Float, deltaY: Float) {
         viewMatrix.getValues(matrix)
         val x = matrix[Matrix.MTRANS_X]
         val y = matrix[Matrix.MTRANS_Y]
+
+        var dx = deltaX
+        var dy = deltaY
+        // width after applying current scale
+        val scaleWidth = (originalWidth * currentScale).roundToInt()
+        // height after applying current scale
+        val scaleHeight = (originalHeight * currentScale).roundToInt()
+        // if scaleWidth is smaller than the views width
+        // in other words if the image width fits in the view
+        // limit left and right movement
+        if (scaleWidth < width) {
+            dx = 0f
+            if (y + dy > 0) dy = -y
+            else if (y + dy < -bottom) dy = -(y + bottom)
+        } else if (scaleHeight < height) {
+            dy = 0f
+            if (x + dx > 0) dx = -x
+            else if (x + dx < -right) dx = -(x + right)
+        } else {
+            if (x + dx > 0) dx = -x
+            else if (x + dx < -right) dx = -(x + right)
+
+            if (y + dy > 0) dy = -y
+            else if (y + dy < -bottom) dy = -(y + bottom)
+        }
+        // move the image with the matrix
+        viewMatrix.postTranslate(dx, dy)
+    }
+
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        scaleDetector.onTouchEvent(event)
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
                 last.set(event.x, event.y)
                 start.set(last)
                 mode = DRAG
+
+                velocityTracker = VelocityTracker.obtain()
+                horizontalFling.cancel()
+                verticalFling.cancel()
             }
             MotionEvent.ACTION_POINTER_DOWN -> {
                 last.set(event.x, event.y)
                 start.set(last)
                 mode = ZOOM
             }
-            MotionEvent.ACTION_MOVE -> //if the mode is ZOOM or
-                //if the mode is DRAG and already zoomed
-                if (mode == ZOOM || mode == DRAG && saveScale > minScale) {
-                    var deltaX = event.x - last.x // x difference
-                    var deltaY = event.y - last.y // y difference
-                    // width after applying current scale
-                    val scaleWidth = (originalWidth * saveScale).roundToInt()
-                    // height after applying current scale
-                    val scaleHeight = (originalHeight * saveScale).roundToInt()
-                    // if scaleWidth is smaller than the views width
-                    // in other words if the image width fits in the view
-                    // limit left and right movement
-                    if (scaleWidth < width) {
-                        deltaX = 0f
-                        if (y + deltaY > 0) deltaY = -y
-                        else if (y + deltaY < -bottom) deltaY = -(y + bottom)
-                    } else if (scaleHeight < height) {
-                        deltaY = 0f
-                        if (x + deltaX > 0) deltaX = -x
-                        else if (x + deltaX < -right) deltaX = -(x + right)
-                    } else {
-                        if (x + deltaX > 0) deltaX = -x
-                        else if (x + deltaX < -right) deltaX = -(x + right)
-
-                        if (y + deltaY > 0) deltaY = -y
-                        else if (y + deltaY < -bottom) deltaY = -(y + bottom)
-                    }
-                    // move the image with the matrix
-                    viewMatrix.postTranslate(deltaX, deltaY)
-                    // set the last touch location to the current
+            MotionEvent.ACTION_MOVE -> // if the mode is ZOOM or
+                // if the mode is DRAG and already zoomed
+                if (mode == ZOOM || mode == DRAG && currentScale > minScale) {
+                    applyVelocity(event.x - last.x, event.y - last.y)
                     last.set(event.x, event.y)
+                    velocityTracker?.addMovement(event)
+                    invalidate()
                 }
             MotionEvent.ACTION_UP -> {
                 mode = NONE
@@ -168,6 +196,12 @@ open class ZoomableView(context: Context, attrs: AttributeSet? = null) : View(co
                     inverse.mapPoints(touchPoint)
                     onClick(touchPoint[0], touchPoint[1])
                 }
+
+                velocityTracker?.computeCurrentVelocity(1000)
+                horizontalFling.setStartVelocity(velocityTracker?.xVelocity ?: 0f).start()
+                verticalFling.setStartVelocity(velocityTracker?.yVelocity ?: 0f).start()
+                velocityTracker?.recycle()
+                velocityTracker = null
             }
             MotionEvent.ACTION_POINTER_UP -> mode = NONE
         }

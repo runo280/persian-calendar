@@ -38,6 +38,7 @@ import com.byagowi.persiancalendar.AgeWidget
 import com.byagowi.persiancalendar.BuildConfig
 import com.byagowi.persiancalendar.DEFAULT_SELECTED_WIDGET_BACKGROUND_COLOR
 import com.byagowi.persiancalendar.DEFAULT_SELECTED_WIDGET_TEXT_COLOR
+import com.byagowi.persiancalendar.IRAN_TIMEZONE_ID
 import com.byagowi.persiancalendar.NON_HOLIDAYS_EVENTS_KEY
 import com.byagowi.persiancalendar.OTHER_CALENDARS_KEY
 import com.byagowi.persiancalendar.OWGHAT_KEY
@@ -119,6 +120,8 @@ fun readAndStoreDeviceCalendarEventsOfTheDay(context: Context) = runCatching {
 
 private var latestFiredUpdate = 0L
 
+// https://developer.android.com/about/versions/12/features/widgets#ensure-compatibility
+// Apply a round corner which is the default in Android 12
 // 16dp on pre-12, but Android 12 is more, is a bit ugly to have it as a global variable
 private var roundPixelSize = 0f
 
@@ -154,8 +157,8 @@ fun update(context: Context, updateDate: Boolean) {
     val prefs = context.appPrefs
 
     // region owghat calculations
-    val nowClock = Clock(Date().toJavaCalendar(forceLocalTime = true))
-    val prayTimes = coordinates?.calculatePrayTimes()
+    val nowClock = Clock(Date().toGregorianCalendar(forceLocalTime = true))
+    val prayTimes = coordinates.value?.calculatePrayTimes()
 
     @StringRes
     val nextOwghatId = prayTimes?.getNextOwghatTimeId(nowClock)
@@ -262,6 +265,21 @@ private inline fun <reified T> AppWidgetManager.updateFromRemoteViews(
     }
 }
 
+private fun createRoundPath(width: Int, height: Int, roundSize: Float): Path {
+    val roundPath = Path()
+    val appearanceModel = ShapeAppearanceModel().withCornerSize(roundSize)
+    val rect = RectF(0f, 0f, width.toFloat(), height.toFloat())
+    ShapeAppearancePathProvider().calculatePath(appearanceModel, 1f, rect, roundPath)
+    return roundPath
+}
+
+private fun createRoundDrawable(@ColorInt color: Int, roundSize: Float): Drawable {
+    val shapeDrawable = MaterialShapeDrawable()
+    shapeDrawable.fillColor = ColorStateList.valueOf(color)
+    shapeDrawable.shapeAppearanceModel = ShapeAppearanceModel().withCornerSize(roundSize)
+    return shapeDrawable
+}
+
 private fun getWidgetBackgroundColor(
     prefs: SharedPreferences, key: String = PREF_SELECTED_WIDGET_BACKGROUND_COLOR
 ) = prefs.getString(key, null)?.let(Color::parseColor)
@@ -297,13 +315,6 @@ fun createAgeRemoteViews(context: Context, width: Int, height: Int, widgetId: In
     return remoteViews
 }
 
-private fun Path.writeRoundnessClip(width: Int, height: Int) {
-    ShapeAppearancePathProvider().calculatePath(
-        ShapeAppearanceModel().withCornerSize(roundPixelSize), 1f,
-        RectF(0f, 0f, width.toFloat(), height.toFloat()), this
-    )
-}
-
 private fun createSunViewRemoteViews(
     context: Context, width: Int, height: Int, jdn: Jdn, prayTimes: PrayTimes?
 ): RemoteViews {
@@ -316,14 +327,14 @@ private fun createSunViewRemoteViews(
     remoteViews.setRoundBackground(R.id.image_background, width, height)
     prepareViewForRendering(sunView, width, height)
     sunView.prayTimes = prayTimes
-    sunView.setTime(jdn.toJavaCalendar())
+    sunView.setTime(jdn.toGregorianCalendar())
     sunView.initiate()
     if (prefersWidgetsDynamicColors || // dynamic colors for widget need this round clipping anyway
         selectedWidgetBackgroundColor != DEFAULT_SELECTED_WIDGET_BACKGROUND_COLOR
-    ) sunView.clippingPath.writeRoundnessClip(width, height)
+    ) sunView.clippingPath = createRoundPath(width, height, roundPixelSize)
     remoteViews.setTextViewTextOrHideIfEmpty(
         R.id.message,
-        if (coordinates == null) context.getString(R.string.ask_user_to_set_location) else ""
+        if (coordinates.value == null) context.getString(R.string.ask_user_to_set_location) else ""
     )
 
     // These are used to generate preview,
@@ -383,7 +394,7 @@ private fun createMapRemoteViews(
     val matrix = Matrix()
     matrix.setScale(size * 2f / mapDraw.mapWidth, size.toFloat() / mapDraw.mapHeight)
     val bitmap = createBitmap(size * 2, size).applyCanvas {
-        withClip(Path().also { it.writeRoundnessClip(size * 2, size) }) {
+        withClip(createRoundPath(size * 2, size, roundPixelSize)) {
             mapDraw.draw(this, matrix, true, null, false)
         }
     }
@@ -774,16 +785,10 @@ private fun RemoteViews.setRoundBackground(
     when {
         prefersWidgetsDynamicColors -> setImageViewResource(viewId, R.drawable.widget_background)
         color == DEFAULT_SELECTED_WIDGET_BACKGROUND_COLOR -> setImageViewResource(viewId, 0)
-        else -> setImageViewBitmap(viewId, createRoundDrawable(color).toBitmap(width, height))
-    }
-}
-
-private fun createRoundDrawable(@ColorInt color: Int): Drawable {
-    return MaterialShapeDrawable().also {
-        it.fillColor = ColorStateList.valueOf(color)
-        // https://developer.android.com/about/versions/12/features/widgets#ensure-compatibility
-        // Apply a round corner which is the default in Android 12
-        it.shapeAppearanceModel = ShapeAppearanceModel().withCornerSize(roundPixelSize)
+        else -> {
+            val roundBackground = createRoundDrawable(color, roundPixelSize).toBitmap(width, height)
+            setImageViewBitmap(viewId, roundBackground)
+        }
     }
 }
 
@@ -799,7 +804,7 @@ fun RemoteViews.setDirection(@IdRes viewId: Int, context: Context) {
 }
 
 private fun RemoteViews.configureClock(@IdRes viewId: Int) {
-    if (isForcedIranTimeEnabled) setString(viewId, "setTimeZone", "Asia/Tehran")
+    if (isForcedIranTimeEnabled) setString(viewId, "setTimeZone", IRAN_TIMEZONE_ID)
     val clockFormat = if (clockIn24) "kk:mm" else "h:mm"
     setCharSequence(viewId, "setFormat12Hour", clockFormat)
     setCharSequence(viewId, "setFormat24Hour", clockFormat)
